@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  config-cache:
+  config-cache-store:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,18 +16,50 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Verify configuration cache reuse
+      - name: Restore Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            .gradle/configuration-cache
+          key: cc-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle.properties', '**/settings.gradle*', 'gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Store configuration cache
         run: |
           ./gradlew --version
 
           ./gradlew --configuration-cache help --configuration-cache-problems=warn | tee /tmp/cc-first.log
           if ! grep -n "Configuration cache entry stored" /tmp/cc-first.log; then
-            echo "Configuration cache was not stored on the first run." >&2
+            echo "Configuration cache was not stored on the first job." >&2
             exit 1
           fi
 
+  config-cache-reuse:
+    runs-on: ubuntu-latest
+    needs: config-cache-store
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Restore Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            .gradle/configuration-cache
+          key: cc-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle.properties', '**/settings.gradle*', 'gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Reuse configuration cache
+        run: |
           ./gradlew --configuration-cache help --configuration-cache-problems=warn | tee /tmp/cc-second.log
           if ! grep -n "Reusing configuration cache" /tmp/cc-second.log; then
-            echo "Configuration cache was not reused on the second run." >&2
+            echo "Configuration cache was not reused on the second job." >&2
             exit 1
           fi
