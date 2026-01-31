@@ -21,6 +21,12 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
+      - name: Restore configuration cache directory
+        uses: actions/cache@v4
+        with:
+          path: .gradle/configuration-cache
+          key: config-cache-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle.properties', '**/settings.gradle*', 'gradle/wrapper/gradle-wrapper.properties') }}
+
       - name: Store configuration cache
         run: |
           ./gradlew --version
@@ -47,6 +53,12 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      - name: Restore configuration cache directory
+        uses: actions/cache@v4
+        with:
+          path: .gradle/configuration-cache
+          key: config-cache-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle.properties', '**/settings.gradle*', 'gradle/wrapper/gradle-wrapper.properties') }}
 
       - name: Reuse configuration cache
         run: |
