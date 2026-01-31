@@ -38,6 +38,48 @@ setup-gradle を使った構成で **ジョブ間の configuration cache 再利�
 ## 最終確認結果
 - 2ジョブ目で `Reusing configuration cache.` と `Configuration cache entry reused.` を確認
 - setup-gradle のみでジョブ間再利用が成立
+- doc 変更のみの push でも 1ジョブ目/2ジョブ目ともに再利用を確認
 
 ## メモ
 - もし再び `.../dsl has been removed` が出る場合は cleanup の設定を最初に疑う
+
+## デメリット・制約（setup-gradle + --configuration-cache）
+- **キャッシュ整合性に敏感**: 依存 jar や DSL キャッシュの差異で再利用不可になりやすい
+- **暗号鍵に依存**: 鍵の形式/変更でキャッシュ無効化（鍵変更は実質全無効）
+- **cleanup 設定のトレードオフ**: `cache-cleanup: never` は安定するがキャッシュ肥大の懸念
+- **非対応プラグイン/スクリプト**: configuration cache 非対応だと再利用不可
+- **環境差異に弱い**: OS/Java/Gradle の違いで再利用不可になりやすい
+- **初回は遅い**: 1回目は保存、効果は2回目以降
+- **ログ判定が紛らわしい**: `Reusing configuration cache.` と `Configuration cache entry reused.` の両方が出る
+
+## ワークフローの詳細解説（各ジョブの中身）
+### config-cache-store
+1) **actions/checkout@v4**
+   - リポジトリを取得し、ジョブの作業ディレクトリを用意
+2) **actions/setup-java@v4**
+   - JDK 17（temurin）をセットアップ
+3) **gradle/actions/setup-gradle@v4**
+   - Gradle User Home のキャッシュ復元/保存を実施
+   - `cache-encryption-key` で configuration cache の暗号化保存を有効化
+   - `cache-cleanup: never` で cleanup による参照 jar 削除を防止
+4) **./gradlew --version**
+   - ランナー上の Gradle/Java 環境の確認
+5) **./gradlew --configuration-cache help**
+   - configuration cache を使用して `help` タスクを実行
+   - ログから `Reusing configuration cache.` または `Configuration cache entry stored.` を判定
+6) **post-action**
+   - setup-gradle が Gradle User Home をキャッシュ保存（必要な場合）
+
+### config-cache-reuse
+1) **actions/checkout@v4**
+   - リポジトリを取得
+2) **actions/setup-java@v4**
+   - JDK 17（temurin）をセットアップ
+3) **gradle/actions/setup-gradle@v4**
+   - Gradle User Home と configuration cache の復元
+   - 鍵と cleanup 設定は store と同様
+4) **./gradlew --configuration-cache help**
+   - configuration cache の再利用を確認
+   - ログの `Reusing configuration cache.` または `Configuration cache entry reused.` を許容
+5) **post-action**
+   - setup-gradle が Gradle User Home をキャッシュ保存（必要な場合）
