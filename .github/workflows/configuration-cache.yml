@@ -22,12 +22,6 @@ jobs:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
           cache-cleanup: never
 
-      - name: Restore configuration cache directory
-        uses: actions/cache@v4
-        with:
-          path: .gradle/configuration-cache
-          key: config-cache-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle.properties', '**/settings.gradle*', 'gradle/wrapper/gradle-wrapper.properties') }}
-
       - name: Store configuration cache
         run: |
           ./gradlew --version
@@ -60,16 +54,14 @@ jobs:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
           cache-cleanup: never
 
-      - name: Restore configuration cache directory
-        uses: actions/cache@v4
-        with:
-          path: .gradle/configuration-cache
-          key: config-cache-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle.properties', '**/settings.gradle*', 'gradle/wrapper/gradle-wrapper.properties') }}
-
       - name: Reuse configuration cache
         run: |
           ./gradlew --configuration-cache help --configuration-cache-problems=warn | tee /tmp/cc-second.log
-          if ! grep -n "Reusing configuration cache" /tmp/cc-second.log; then
+          if grep -n "Reusing configuration cache" /tmp/cc-second.log; then
+            echo "Configuration cache was reused on the second job."
+          elif grep -n "Configuration cache entry reused" /tmp/cc-second.log; then
+            echo "Configuration cache entry reused on the second job."
+          else
             echo "Configuration cache was not reused on the second job." >&2
             exit 1
           fi
