@@ -1,0 +1,33 @@
+name: Configuration Cache Check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  config-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Verify configuration cache reuse
+        run: |
+          ./gradlew --version
+
+          ./gradlew --configuration-cache help --configuration-cache-problems=warn | tee /tmp/cc-first.log
+          if ! grep -n "Configuration cache entry stored" /tmp/cc-first.log; then
+            echo "Configuration cache was not stored on the first run." >&2
+            exit 1
+          fi
+
+          ./gradlew --configuration-cache help --configuration-cache-problems=warn | tee /tmp/cc-second.log
+          if ! grep -n "Reusing configuration cache" /tmp/cc-second.log; then
+            echo "Configuration cache was not reused on the second run." >&2
+            exit 1
+          fi
