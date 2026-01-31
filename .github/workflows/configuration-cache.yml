@@ -32,8 +32,12 @@ jobs:
           ./gradlew --version
 
           ./gradlew --configuration-cache help --configuration-cache-problems=warn | tee /tmp/cc-first.log
-          if ! grep -n "Configuration cache entry stored" /tmp/cc-first.log; then
-            echo "Configuration cache was not stored on the first job." >&2
+          if grep -n "Reusing configuration cache" /tmp/cc-first.log; then
+            echo "Configuration cache was reused on the first job."
+          elif grep -n "Configuration cache entry stored" /tmp/cc-first.log; then
+            echo "Configuration cache was stored on the first job."
+          else
+            echo "Configuration cache was neither stored nor reused on the first job." >&2
             exit 1
           fi
 
