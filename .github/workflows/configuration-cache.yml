@@ -16,14 +16,8 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Restore Gradle cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            .gradle/configuration-cache
-          key: cc-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle.properties', '**/settings.gradle*', 'gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Store configuration cache
         run: |
@@ -47,14 +41,8 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Restore Gradle cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            .gradle/configuration-cache
-          key: cc-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle.properties', '**/settings.gradle*', 'gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Reuse configuration cache
         run: |
